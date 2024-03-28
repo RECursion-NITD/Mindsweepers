@@ -5,8 +5,9 @@ steps to install
 1. create python virtualenv and activate it
 2. install all packages from requirements.txt
   ```pip install -r "requirements.txt"```
-4. to setup the database use
-  ```python manage.py makemigraions
-  python manage.py migrate```
-4. run the server using
+3. run
+  ```python manage.py makemigraions```
+
+4. run ```python manage.py migrate```
+5. run the server using
   ```python manage.py runserver ```
