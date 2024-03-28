@@ -6,7 +6,7 @@ steps to install
 2. install all packages from requirements.txt
   ```pip install -r "requirements.txt"```
 3. run
-  ```python manage.py makemigraions```
+  ```python manage.py makemigrations```
 
 4. run ```python manage.py migrate```
 5. run the server using
