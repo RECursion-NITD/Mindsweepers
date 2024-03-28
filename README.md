@@ -1,4 +1,4 @@
-# RECursionNITD-website
+# Mindsweeper-website
 
 steps to install
 
