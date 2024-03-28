@@ -10,7 +10,9 @@ class LoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
+        print(username,password)
         refresh = RefreshToken.for_user(user)
+        refresh['username'] = user.username
         return JsonResponse(status=200,data={
             'refresh': str(refresh),
             'access': str(refresh.access_token),
@@ -24,18 +26,18 @@ class RegisterView(APIView):
         profile_exist = Profile.objects.filter(phone_number=phone_number)
         user_exist = User.objects.filter(username=username)
         if( profile_exist ):
-            return JsonResponse({
+            return JsonResponse(data={
                 'error': 'Phone number already exists'
             },status=400)
         if( user_exist ):
-            return JsonResponse({
+            return JsonResponse(data={
                 'error': 'Username already exists'
             },status=400)
         user = User.objects.create_user(username=username, password=password)
         profile = Profile.objects.create(user=user, phone_number=phone_number)
         refresh = RefreshToken.for_user(user)
-        return JsonResponse({
+        return JsonResponse(data={
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         },status=201)
-    
+        
