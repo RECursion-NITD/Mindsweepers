@@ -73,8 +73,8 @@ def equationGenerate():
 
 class ValidateStringView(APIView):
 	def post(self,request):
-		phone_number=request.POST.get('phone_number')
-		input_string = request.POST.get('input_string')
+		phone_number=request.data.get('phone')
+		input_string = request.data.get('input')
 		try:
 			profile=Profile.objects.get(phone_number=phone_number)
 		except Profile.DoesNotExist:
@@ -84,6 +84,7 @@ class ValidateStringView(APIView):
 		try:
 			game_instance=Game.objects.get(game_user=profile)
 		except Game.DoesNotExist:
+			print("ok")
 			equ=equationGenerate()
 			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equ)
 		game_string_arr=game_instance.game_string_arr

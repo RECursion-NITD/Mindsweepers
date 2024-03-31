@@ -22,5 +22,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path ('user/api/', include('website.urls')),
     path ('game/api/', include('mathswordle.urls')),
-    path('validate/',ValidateStringView.as_view(),name='validate_input'),
 ]

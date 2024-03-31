@@ -10,7 +10,10 @@ class LoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
-        print(username,password)
+        if(user==None):
+            return JsonResponse(data={
+                'error': 'Invalid credentials'
+            },status=400)
         refresh = RefreshToken.for_user(user)
         refresh['username'] = user.username
         return JsonResponse(status=200,data={
