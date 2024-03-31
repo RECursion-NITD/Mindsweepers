@@ -1,58 +1,14 @@
 from django.http import JsonResponse
-sathvika-validation
-from django.views import View
-from .models import GameState
-
-class ValidateStringView(View):
-    def post(self, request, *args, **kwargs):
-       
-        input_string = request.POST.get('input_string')
-
-     
-        game_state = GameState.objects.last()
-
-        
-        is_valid = validate_input_string(input_string, game_state.correct_answer)
-
-        
-        response_data = {
-            'is_valid': is_valid,
-            'game_won': check_game_won(is_valid),
-        }
-
-        return JsonResponse(response_data)
-
-def validate_input_string(input_string, correct_answer):
-    """
-    Validates the user's input string against the correct answer.
-
-    Args:
-        input_string (str): The user's input string.
-        correct_answer (str): The correct answer for the game.
-
-    Returns:
-        bool: True if the input string matches the correct answer, False otherwise.
-    """
-    
-    return input_string == correct_answer
-
-def check_game_won(is_valid):
-    """
-    Determines if the game has been won based on the validity of the user's input string.
-
-    Args:
-        is_valid (bool): Whether the user's input string is valid.
-
-    Returns:
-        bool: True if the game has been won (input string is valid), False otherwise.
-    """
-    return is_valid
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from website.models import Profile
 from .models import Game
 import random as rnd
+import json
+
+
+
 
 def convertToString(a):
 	if(a < 10):
@@ -114,6 +70,61 @@ def equationGenerate():
 	equation = firstIntegerStr + operationSelected + secondIntegerStr + "=" + thirdIntegerStr
 	return equation
 
+
+class ValidateStringView(APIView):
+	def post(self,request):
+		phone_number=request.POST.get('phone_number')
+		input_string = request.POST.get('input_string')
+		try:
+			profile=Profile.objects.get(phone_number=phone_number)
+		except Profile.DoesNotExist:
+			return JsonResponse(status=404,data={
+				'message':'No user exists'
+            })
+		try:
+			game_instance=Game.objects.get(game_user=profile)
+		except Game.DoesNotExist:
+			equ=equationGenerate()
+			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equ)
+		game_string_arr=game_instance.game_string_arr
+		game_string_arr = list(game_string_arr)
+		game_string_arr.append(input_string)
+		game_string_arr_json = json.dumps(game_string_arr)
+		game_instance.game_string_arr=game_string_arr_json
+		game_instance.save()
+		valid_string=validate(input_string,game_instance.ques_string)
+		return JsonResponse(status=200,data={
+			'validity':valid_string
+        })
+			
+
+def validate(input_string, correct_string):
+    bool_string = "0" * len(input_string)  # Initialize bool_string with zeros
+    correct_list = list(correct_string)   # Convert correct_string to a list for modification
+
+    for i in range(len(input_string)):
+        for j in range(len(correct_list)):
+            if input_string[i] == correct_list[j]:
+                if i == j:
+                    bool_string = bool_string[:i] + '1' + bool_string[i+1:]  # Update bool_string at position i
+                    correct_list[j] = 'x'  # Mark the character as matched in correct_list
+                else:
+                    bool_string = bool_string[:i] + '1' + bool_string[i+1:]  # Update bool_string at position i
+                    correct_list[j] = 'x'  # Mark the character as matched in correct_list
+                break
+
+    return bool_string
+
+			
+	
+
+def validate_input_string(input_string, correct_answer):
+    return input_string == correct_answer
+
+def check_game_won(is_valid):
+    return is_valid
+
+
 class MathsWordleView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -122,6 +133,5 @@ class MathsWordleView(APIView):
             'message': 'Hello World'
         })
 
-def randomEquationView(request, user_id):
-    return request
- main
+# def randomEquationView(request, user_id):
+#     return request

@@ -6,5 +6,5 @@ from .views import (
 urlpatterns = [
     
     path('test/', MathsWordleView.as_view(), name='game'),
-    path('mindsweeper_website/',  include('mindsweepers_website.urls'))
+    path('mindsweeper_website/',  include('mindsweeper_website.urls')),
 ]
