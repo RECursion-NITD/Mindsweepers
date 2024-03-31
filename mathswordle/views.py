@@ -72,6 +72,8 @@ def equationGenerate():
 
 
 class ValidateStringView(APIView):
+	authentication_classes = [JWTAuthentication]
+	permission_classes = [IsAuthenticated]
 	def post(self,request):
 		phone_number=request.data.get('phone')
 		input_string = request.data.get('input')
@@ -84,24 +86,39 @@ class ValidateStringView(APIView):
 		try:
 			game_instance=Game.objects.get(game_user=profile)
 		except Game.DoesNotExist:
-			print("ok")
 			equ=equationGenerate()
 			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equ)
+		if(game_instance.moves>=6):
+			return JsonResponse(status=200,data={
+				'validity':'00000000',
+				'verdict': 1
+			})
 		game_string_arr=game_instance.game_string_arr
 		game_string_arr = list(game_string_arr)
 		game_string_arr.append(input_string)
 		game_string_arr_json = json.dumps(game_string_arr)
 		game_instance.game_string_arr=game_string_arr_json
+		game_instance.moves+=1
 		game_instance.save()
 		valid_string=validate(input_string,game_instance.ques_string)
+		verdict=check_game_won(valid_string,game_instance)
+		if(verdict==2):
+			profile.points+=5
+			profile.save()
 		return JsonResponse(status=200,data={
-			'validity':valid_string
+			'validity':valid_string,
+			'verdict': verdict
         })
 			
 
 def validate(input_string, correct_string):
     bool_string = "0" * len(input_string)  # Initialize bool_string with zeros
     correct_list = list(correct_string)   # Convert correct_string to a list for modification
+    for i in range(len(input_string)):
+        if input_string[i] == correct_list[i]:
+            bool_string = bool_string[:i] + '2' + bool_string[i+1:]  # Update bool_string at position i
+            correct_list[i] = 'x'  # Mark the character as matched in correct_list
+            input_string = input_string[:i] + 'y' + input_string[i+1:]
 
     for i in range(len(input_string)):
         for j in range(len(correct_list)):
@@ -122,17 +139,37 @@ def validate(input_string, correct_string):
 def validate_input_string(input_string, correct_answer):
     return input_string == correct_answer
 
-def check_game_won(is_valid):
-    return is_valid
+def check_game_won(valid_string, game_instance):
+	verdict = 0
+	if valid_string == "2" * 8:
+		verdict = 2
+	elif game_instance.moves == 6:
+		verdict = 1
+	return verdict
 
 
-class MathsWordleView(APIView):
+class CreateMathsWordleView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     def post(self,request):
+        phone_number=request.data.get('phone')
+        try:
+            profile=Profile.objects.get(phone_number=phone_number)
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404,data={
+				'message':'No user exists'
+			})
+        
+        try:
+            game_instance=Game.objects.get(game_user=profile)
+        except Game.DoesNotExist:
+            game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equationGenerate())
+        game_instance.moves=0
+        game_instance.game_string_arr=[]
+        game_instance.ques_string=equationGenerate()
+        game_instance.save()
         return JsonResponse(status=200,data={
-            'message': 'Hello World'
+            'message': 'done'
         })
 
-# def randomEquationView(request, user_id):
-#     return request
+

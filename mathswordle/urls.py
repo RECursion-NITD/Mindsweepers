@@ -1,11 +1,10 @@
 from django.urls import path, include
 from .views import (
-    MathsWordleView,
+    CreateMathsWordleView,
     ValidateStringView,
 )
 
 urlpatterns = [
-    
-    path('test/', MathsWordleView.as_view(), name='game'),
+    path('create/', CreateMathsWordleView.as_view(), name='create_game1'),
     path('validate/', ValidateStringView.as_view(), name='validate'),
 ]
