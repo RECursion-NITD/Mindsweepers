@@ -10,6 +10,7 @@ class Profile(models.Model):
     )
     role = models.CharField(max_length=50, choices=role_choices ,default='3')
     phone_number = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    points = models.IntegerField(default=0)
     
     def __str__(self):
         return self.user.username
