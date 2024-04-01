@@ -22,4 +22,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path ('user/api/', include('website.urls')),
     path ('game/api/', include('mathswordle.urls')),
+    path ('graph/api/', include('graph_game.urls')),
 ]

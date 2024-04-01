@@ -16,6 +16,7 @@ class LoginView(APIView):
             },status=400)
         refresh = RefreshToken.for_user(user)
         refresh['username'] = user.username
+        refresh['phone_number'] = user.profile.phone_number
         return JsonResponse(status=200,data={
             'refresh': str(refresh),
             'access': str(refresh.access_token),
