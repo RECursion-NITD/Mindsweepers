@@ -41,7 +41,7 @@ def validateString(equationstr):
 			elif found and equationstr[i] != '=':
 				operatorIndex = i
 
-		if(operatorNum < 2):
+		if(operatorNum != 2):
 			return False
 		
 		try:
@@ -147,6 +147,7 @@ class ValidateStringView(APIView):
 		
 		if(not(validateString(input_string))):
 			return JsonResponse(status = 200, data = {
+				'verdict' : 0,
 				'message' : 'Invalid String'
 			})
 	
