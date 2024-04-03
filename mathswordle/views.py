@@ -142,20 +142,17 @@ class ValidateStringView(APIView):
 		if(game_instance.moves>=6):
 			return JsonResponse(status=200,data={
 				'validity':'00000000',
-				'verdict': 1
+				'verdict': 1,
+				'message': "moves exceeded"
 			})
 		
 		if(not(validateString(input_string))):
 			return JsonResponse(status = 200, data = {
-				'verdict' : 0,
-				'message' : 'Invalid String'
+				'verdict' : -1,
+				'message' : 'Invalid Input',
+				'validity' : '00000000'
 			})
-	
-		game_string_arr=game_instance.game_string_arr
-		game_string_arr = list(game_string_arr)
-		game_string_arr.append(input_string)
-		game_string_arr_json = json.dumps(game_string_arr)
-		game_instance.game_string_arr=game_string_arr_json
+		game_instance.game_string_arr.append(input_string)
 		game_instance.moves+=1
 		game_instance.save()
 		valid_string=validate(input_string,game_instance.ques_string)
@@ -167,7 +164,8 @@ class ValidateStringView(APIView):
 			profile.save()
 		return JsonResponse(status=200,data={
 			'validity':valid_string,
-			'verdict': verdict
+			'verdict': verdict,
+			'message': 'ok'
         })
 			
 
@@ -231,5 +229,24 @@ class CreateMathsWordleView(APIView):
         return JsonResponse(status=200,data={
             'message': 'done'
         })
+
+class CreateGameState(APIView):
+	authentication_classes = [JWTAuthentication]
+	permission_classes = [IsAuthenticated]
+	def post(self,request):
+		phone_number=request.data.get('phone')
+		try:
+			profile=Profile.objects.get(phone_number=phone_number)
+		except Profile.DoesNotExist:
+			return JsonResponse(status=404,data={
+				'message':'No user exists'
+			})
+		try:
+			game_instance=Game.objects.get(game_user=profile)
+		except Game.DoesNotExist:
+			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equationGenerate())
+		return JsonResponse(status=200,data={
+			'stringArr': game_instance.game_string_arr,
+		})
 
 
