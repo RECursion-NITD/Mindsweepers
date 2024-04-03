@@ -4,6 +4,5 @@ from .views import (
 )
 
 urlpatterns = [
-    path('generate_tree/', GraphGameView.as_view(), name='generate_tree'),
-    path('validate_tree/', GraphGameView.as_view(), name='validate_tree'),
+    path('test/', GraphGameView.as_view(), name='create_game1'),
 ]
