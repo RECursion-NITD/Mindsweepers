@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'website',
     'mathswordle',
+    'graph_game',
 ]
 
 MIDDLEWARE = [

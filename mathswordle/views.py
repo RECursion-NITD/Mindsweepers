@@ -7,8 +7,59 @@ from .models import Game
 import random as rnd
 import json
 
+def operateOnNumbers(firstNumber, secondNumber, operationStr):
+	if(operationStr == '+'):
+		return firstNumber + secondNumber
+	elif(operationStr == '-'):
+		return firstNumber - secondNumber
+	elif(operationStr == '*'):
+		return firstNumber * secondNumber
+	elif(operationStr == '/'):
+		return firstNumber / secondNumber
 
+def validateString(equationstr):
+	operatorList = ['+', '*', '/', '-', '=']
 
+	operatorNum = 0
+	equalIndex = -1
+	operatorIndex = -1
+
+	firstNumber = 0
+	secondNumber = 0
+	operatedNumber = 0
+
+	if(len(equationstr) != 8):
+			return False
+	else:
+		for i in range(0, 8):
+			found = equationstr[i] in operatorList
+			if found:
+				operatorNum += 1
+
+			if found and equationstr[i] == '=':
+				equalIndex = i
+			elif found and equationstr[i] != '=':
+				operatorIndex = i
+
+		if(operatorNum != 2):
+			return False
+		
+		try:
+			if(operatorIndex < equalIndex):
+				firstNumber = int(equationstr[0:operatorIndex])
+				secondNumber = int(equationstr[operatorIndex + 1: equalIndex])
+				operatedNumber = int(equationstr[equalIndex + 1: 8])
+			elif(operatorIndex > equalIndex):
+				firstNumber = int(equationstr[operatorIndex + 1 : 8])
+				secondNumber = int(equationstr[equalIndex + 1: operatorIndex])
+				operatedNumber = int(equationstr[0: equalIndex])
+
+			if(operateOnNumbers(firstNumber, secondNumber, equationstr[operatorIndex]) == operatedNumber):
+				return True
+			else:
+				return False
+		except:
+			return False
 
 def convertToString(a):
 	if(a < 10):
@@ -93,6 +144,13 @@ class ValidateStringView(APIView):
 				'validity':'00000000',
 				'verdict': 1
 			})
+		
+		if(not(validateString(input_string))):
+			return JsonResponse(status = 200, data = {
+				'verdict' : 0,
+				'message' : 'Invalid String'
+			})
+	
 		game_string_arr=game_instance.game_string_arr
 		game_string_arr = list(game_string_arr)
 		game_string_arr.append(input_string)
@@ -104,6 +162,8 @@ class ValidateStringView(APIView):
 		verdict=check_game_won(valid_string,game_instance)
 		if(verdict==2):
 			profile.points+=5
+			game_instance.moves=6
+			game_instance.save()
 			profile.save()
 		return JsonResponse(status=200,data={
 			'validity':valid_string,
@@ -140,11 +200,11 @@ def validate_input_string(input_string, correct_answer):
     return input_string == correct_answer
 
 def check_game_won(valid_string, game_instance):
-	verdict = 0
+	verdict = 0 # continue
 	if valid_string == "2" * 8:
-		verdict = 2
+		verdict = 2 # win
 	elif game_instance.moves == 6:
-		verdict = 1
+		verdict = 1	# lose
 	return verdict
 
 
@@ -167,7 +227,7 @@ class CreateMathsWordleView(APIView):
         game_instance.moves=0
         game_instance.game_string_arr=[]
         game_instance.ques_string=equationGenerate()
-        game_instance.save()
+        game_instance.save() # reset game instance
         return JsonResponse(status=200,data={
             'message': 'done'
         })
