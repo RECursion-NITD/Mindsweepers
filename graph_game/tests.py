@@ -12,7 +12,7 @@ class CreateGraphGameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        phone_number = request.data.get('phone')
+        phone_number = request.data('phone')
         
         try:
             profile = Profile.objects.get(phone_number=phone_number)
@@ -27,12 +27,7 @@ class CreateGraphGameView(APIView):
                 tree_structure=json.loads(formattedTree()) 
             )
 
-        if request.data.get('reset', False):  
-            game_instance.tree_structure = json.loads(formattedTree())  
-            game_instance.moves = 0  
-            game_instance.save() 
-
-            return JsonResponse(status=200, data={'message': 'Game reset successfully'})
+        
         
         game_instance.tree_structure = json.loads(formattedTree()) 
         game_instance.moves = 0  
