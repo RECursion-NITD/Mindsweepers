@@ -2,64 +2,226 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from .models import Node
+from website.models import Profile
+from .models import GraphGame
+import json
+import random
+ 
+def print_tree_edges(prufer, m):
+    edgeContainer = []
+    vertices = m + 2
+    vertex_set = [0] * vertices
+ 
+    for i in range(vertices):
+        vertex_set[i] = 0
+ 
+    for i in range(vertices - 2):
+        vertex_set[prufer[i] - 1] += 1
+
+    j = 0
+ 
+    for i in range(vertices - 2):
+        for j in range(vertices):
+            if vertex_set[j] == 0:
+                vertex_set[j] = -1
+
+                edgeContainer.append((j + 1, prufer[i]))
+                vertex_set[prufer[i] - 1] -= 1
+ 
+                break
+ 
+    j = 0
+
+    edgeTuple = []
+    for i in range(vertices):
+        if vertex_set[i] == 0 and j == 0:
+            edgeTuple.append(i + 1)
+            j += 1
+        elif vertex_set[i] == 0 and j == 1:
+            edgeTuple.append(i + 1)
+
+    edgeContainer.append(tuple(edgeTuple))
+    return edgeContainer
+
+def generate_random_tree(n):
+    length = n - 2
+    arr = [0] * length
+ 
+    for i in range(length):
+        arr[i] = random.randint(1, length + 1)
+ 
+    setOfEdges = print_tree_edges(arr, length)
+    return setOfEdges
+
+def formattedTree():
+    edgeContainer = generate_random_tree(7)
+    listOfEdgesOfUI = []
+    for tup in edgeContainer:
+        formatted_string = { "source": tup[0], "target": tup[1], "value": "1" }
+        listOfEdgesOfUI.append(formatted_string)
+
+    #final_string = ",\n".join(listOfEdgesOfUI)
+    return listOfEdgesOfUI
+
+#dummy
+json_string = """
+    {
+    "nodes": [
+        { "id": "1", "group": "team1", "value": "0"},
+        { "id": "2", "group": "team2", "value": "3"},
+        { "id": "3", "group": "team3", "value": "0"},
+        { "id": "4", "group": "team4", "value": "0"},
+        { "id": "5", "group": "team4", "value": "4"},
+        { "id": "6", "group": "team4", "value": "6"},
+        { "id": "7", "group": "team4", "value": "0"}
+    ],
+    "links": [
+        { "source": "2", "target": "1", "value": 1 },
+        { "source": "3", "target": "2", "value": 1 },
+        { "source": "4", "target": "1", "value": 1 },
+        { "source": "4", "target": "6", "value": 1 },
+        { "source": "7", "target": "3", "value": 1 },
+        { "source": "7", "target": "5", "value": 1 },
+        { "source": "7", "target": "4", "value": 1 }
+    ]
+    }
+    """
+
+def process_graph_data(data):
+    #data = json.loads(json_string)
+    nodes = data.get('nodes', [])
+    links = data.get('links', [])
+
+    adjacency_matrix = [[0] * len(nodes) for _ in range(len(nodes))]
+    node_values = {}
+
+    for node in nodes:
+        node_id = int(node['id'])
+        node_value = int(node['value'])
+        node_values[node_id] = node_value
+
+    for link in links:
+        source = int(link['source'])
+        target = int(link['target'])
+        adjacency_matrix[source - 1][target - 1] = 1  
+
+    return adjacency_matrix, node_values
+
+def validateTreeFunction(data):
+    adjacency_matrix, node_values = process_graph_data(data)
+    validity = list("1111111")
+    edgeDifferences = set()
+    for i in range(0, 7):
+        for j in range(0, 7):
+            if(adjacency_matrix[i][j]):
+                if(abs(node_values[i + 1] - node_values[j + 1]) in edgeDifferences):
+                    validity[i] = '0'
+                    validity[j] = '0'
+                edgeDifferences.add(abs(node_values[i + 1] - node_values[j + 1]))
+
+    return validity
 
 class GraphGameView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-
-    def generate_tree(self):
-        try:
-            Node.objects.all().delete()
-
-            odd_integers = [2 * i + 1 for i in range(7)]
-
-            root = Node.objects.create(value=odd_integers[0])
-
-            for i in range(1, 7):
-                node = Node.objects.create(value=odd_integers[i], parent=root)
-
-            return {'success': True, 'message': 'Tree generated successfully'}
-        except Exception as e:
-            return {'success': False, 'message': str(e)}
-
-    def validate_tree(self):
-        try:
-           
-            nodes = Node.objects.all()
-
-            if nodes.count() != 7:
-                return {'valid': False, 'message': 'Tree must have exactly 7 nodes'}
-
-            visited = set()
-            stack = [(nodes[0], None)]  
-            while stack:
-                node, parent = stack.pop()
-                if node in visited:
-                    return {'valid': False, 'message': 'Cycle detected in the tree'}
-                visited.add(node)
-                children = node.children.all()
-                for child in children:
-                    if child != parent:  
-                        stack.append((child, node))
-
-            
-            differences = set()
-            for node in nodes:
-                if node.parent:
-                    difference = abs(node.value - node.parent.value)
-                    if difference in differences:
-                        return {'valid': False, 'message': 'Each edge must have a distinct difference'}
-                    differences.add(difference)
-
-            return {'valid': True, 'message': 'Tree is valid'}
-        except Exception as e:
-            return {'valid': False, 'message': str(e)}
+    def post(self,request):
+        return JsonResponse(status=200,data={
+            'Valid': validateTreeFunction(request.data)
+        })
+    
+class GraphGenerateView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self,request):
+        return JsonResponse(status=200,data={
+            "nodes" : [{ "id": "1", "group": "team1", "value": "0"},
+                          { "id": "2", "group": "team2", "value": "0"},
+                          { "id": "3", "group": "team3", "value": "0"},
+                          { "id": "4", "group": "team4", "value": "0"},
+                          { "id": "5", "group": "team4", "value": "0"},
+                          { "id": "6", "group": "team4", "value": "0"},
+                          { "id": "7", "group": "team4", "value": "0"}
+                          ],
+            'links': formattedTree()
+        })
+    
+class CreateGraphGameView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        result = self.generate_tree()
-        return JsonResponse(result)
+        phone_number = request.data('phone')
+        
+        try:
+            profile = Profile.objects.get(phone_number=phone_number)
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404, data={'message': 'No user exists'})
+        
+        try:
+            game_instance = GraphGame.objects.get(game_user=profile)
+        except GraphGame.DoesNotExist:
+            game_instance = GraphGame.objects.create(
+                game_user=profile,
+                tree_structure={
+                    "nodes" : [{ "id": "1", "group": "team1", "value": "0"},
+                        { "id": "2", "group": "team2", "value": "0"},
+                        { "id": "3", "group": "team3", "value": "0"},
+                        { "id": "4", "group": "team4", "value": "0"},
+                        { "id": "5", "group": "team4", "value": "0"},
+                        { "id": "6", "group": "team4", "value": "0"},
+                        { "id": "7", "group": "team4", "value": "0"}
+                    ],
+                    'links': formattedTree()
+                }
+            )
 
-    def get(self, request):
-        result = self.validate_tree()
-        return JsonResponse(result)
+        
+        
+        game_instance.tree_structure = {
+            "nodes" : [
+                { "id": "1", "group": "team1", "value": "0"},
+                { "id": "2", "group": "team2", "value": "0"},
+                { "id": "3", "group": "team3", "value": "0"},
+                { "id": "4", "group": "team4", "value": "0"},
+                { "id": "5", "group": "team4", "value": "0"},
+                { "id": "6", "group": "team4", "value": "0"},
+                { "id": "7", "group": "team4", "value": "0"}
+            ],
+            'links': formattedTree()
+        }
+        game_instance.moves = 0  
+        game_instance.save()  
+
+        return JsonResponse(status=200, data={'message': 'Done'})
+    
+
+class GetGraphView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self,request):
+        phone_number = request.data.get('phone')
+        try:
+            profile = Profile.objects.get(phone_number=phone_number)
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404, data={'message': 'No user exists'})
+        
+        try:
+            game_instance = GraphGame.objects.get(game_user=profile)
+        except GraphGame.DoesNotExist:
+            game_instance = GraphGame.objects.create(
+                game_user=profile,
+                tree_structure={
+                    "nodes" : [{ "id": "1", "group": "team1", "value": "0"},
+                        { "id": "2", "group": "team2", "value": "0"},
+                        { "id": "3", "group": "team3", "value": "0"},
+                        { "id": "4", "group": "team4", "value": "0"},
+                        { "id": "5", "group": "team4", "value": "0"},
+                        { "id": "6", "group": "team4", "value": "0"},
+                        { "id": "7", "group": "team4", "value": "0"}
+                    ],
+                    'links': formattedTree()
+                }
+            )
+
+        return JsonResponse(status=200, data=game_instance.tree_structure)
+
