@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from website.models import Profile
+from .models import GraphGame
 import json
 import random
  
@@ -55,7 +57,7 @@ def formattedTree():
     edgeContainer = generate_random_tree(7)
     listOfEdgesOfUI = []
     for tup in edgeContainer:
-        formatted_string = "{{ source: '{}', target: '{}', value: 1 }}".format(tup[0], tup[1])
+        formatted_string = { "source": tup[0], "target": tup[1], "value": "1" }
         listOfEdgesOfUI.append(formatted_string)
 
     #final_string = ",\n".join(listOfEdgesOfUI)
@@ -142,5 +144,84 @@ class GraphGenerateView(APIView):
                           ],
             'links': formattedTree()
         })
+    
+class CreateGraphGameView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        phone_number = request.data('phone')
+        
+        try:
+            profile = Profile.objects.get(phone_number=phone_number)
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404, data={'message': 'No user exists'})
+        
+        try:
+            game_instance = GraphGame.objects.get(game_user=profile)
+        except GraphGame.DoesNotExist:
+            game_instance = GraphGame.objects.create(
+                game_user=profile,
+                tree_structure={
+                    "nodes" : [{ "id": "1", "group": "team1", "value": "0"},
+                        { "id": "2", "group": "team2", "value": "0"},
+                        { "id": "3", "group": "team3", "value": "0"},
+                        { "id": "4", "group": "team4", "value": "0"},
+                        { "id": "5", "group": "team4", "value": "0"},
+                        { "id": "6", "group": "team4", "value": "0"},
+                        { "id": "7", "group": "team4", "value": "0"}
+                    ],
+                    'links': formattedTree()
+                }
+            )
+
+        
+        
+        game_instance.tree_structure = {
+            "nodes" : [
+                { "id": "1", "group": "team1", "value": "0"},
+                { "id": "2", "group": "team2", "value": "0"},
+                { "id": "3", "group": "team3", "value": "0"},
+                { "id": "4", "group": "team4", "value": "0"},
+                { "id": "5", "group": "team4", "value": "0"},
+                { "id": "6", "group": "team4", "value": "0"},
+                { "id": "7", "group": "team4", "value": "0"}
+            ],
+            'links': formattedTree()
+        }
+        game_instance.moves = 0  
+        game_instance.save()  
+
+        return JsonResponse(status=200, data={'message': 'Done'})
+    
+
+class GetGraphView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self,request):
+        phone_number = request.data.get('phone')
+        try:
+            profile = Profile.objects.get(phone_number=phone_number)
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404, data={'message': 'No user exists'})
+        
+        try:
+            game_instance = GraphGame.objects.get(game_user=profile)
+        except GraphGame.DoesNotExist:
+            game_instance = GraphGame.objects.create(
+                game_user=profile,
+                tree_structure={
+                    "nodes" : [{ "id": "1", "group": "team1", "value": "0"},
+                        { "id": "2", "group": "team2", "value": "0"},
+                        { "id": "3", "group": "team3", "value": "0"},
+                        { "id": "4", "group": "team4", "value": "0"},
+                        { "id": "5", "group": "team4", "value": "0"},
+                        { "id": "6", "group": "team4", "value": "0"},
+                        { "id": "7", "group": "team4", "value": "0"}
+                    ],
+                    'links': formattedTree()
+                }
+            )
+
+        return JsonResponse(status=200, data=game_instance.tree_structure)
 
