@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from website.models import Profile
 from .models import Game
 import random as rnd
+import math
 import json
 
 def operateOnNumbers(firstNumber, secondNumber, operationStr):
@@ -68,59 +69,90 @@ def convertToString(a):
 		return str(a)
 
 def equationGenerate():
-	equation = ""
-	operations = ["+", "-", "/", "*"]
+	equationType = rnd.randrange(0, 2)
+	if equationType:
+		equation = ""
+		operations = ["+", "-", "/", "*"]
 
-	firstInteger = 0
-	secondInteger = 0
-	thirdInteger = 0
-	firstIntegerStr = ""
-	secondIntegerStr = ""
-	thirdIntegerStr = ""
-	resStr = ""
+		firstInteger = 0
+		secondInteger = 0
+		thirdInteger = 0
+		firstIntegerStr = ""
+		secondIntegerStr = ""
+		thirdIntegerStr = ""
 
-	operationSelected = rnd.choice(operations)
-	if operationSelected == '+':
-		firstInteger = rnd.randrange(1, 100)
-		if firstInteger == 99:
-			secondInteger = 0
-		else:
-			secondInteger = rnd.randrange(1, 100 - firstInteger)
-	elif operationSelected == '-':
-		firstInteger = rnd.randrange(1, 100)
-		secondInteger = rnd.randrange(1, firstInteger + 1)
-	elif operationSelected == '*':
-		firstInteger = rnd.randrange(1, 50)
+		operationSelected = rnd.choice(operations)
+		if operationSelected == '+':
+			firstInteger = rnd.randrange(1, 100)
+			if firstInteger == 99:
+				secondInteger = 0
+			else:
+				secondInteger = rnd.randrange(1, 100 - firstInteger)
+		elif operationSelected == '-':
+			firstInteger = rnd.randrange(1, 100)
+			secondInteger = rnd.randrange(1, firstInteger + 1)
+		elif operationSelected == '*':
+			firstInteger = rnd.randrange(1, 50)
 
-		if int(100/firstInteger) == 1:
-			secondInteger = 1
-		else:
-			secondInteger = rnd.randrange(1, int(100/firstInteger))
-	elif operationSelected == '/':
-		secondInteger = rnd.randrange(1, 25)
-		if int(100/secondInteger) == 1:
-			thirdInteger = 1
-		else:
-			thirdInteger = rnd.randrange(1, int(100/secondInteger))
+			if int(100/firstInteger) == 1:
+				secondInteger = 1
+			else:
+				secondInteger = rnd.randrange(1, int(100/firstInteger))
+		elif operationSelected == '/':
+			secondInteger = rnd.randrange(1, 25)
+			if int(100/secondInteger) == 1:
+				thirdInteger = 1
+			else:
+				thirdInteger = rnd.randrange(1, int(100/secondInteger))
 
-		firstInteger = thirdInteger * secondInteger
+			firstInteger = thirdInteger * secondInteger
 
-	if operationSelected == '+':
-		thirdInteger = firstInteger + secondInteger
-	elif operationSelected == '-':
-		thirdInteger = firstInteger - secondInteger
-	elif operationSelected == '*':
-		thirdInteger = firstInteger * secondInteger
+		if operationSelected == '+':
+			thirdInteger = firstInteger + secondInteger
+		elif operationSelected == '-':
+			thirdInteger = firstInteger - secondInteger
+		elif operationSelected == '*':
+			thirdInteger = firstInteger * secondInteger
 
-	#third integer is already calculated for division
+		#third integer is already calculated for division
 
-	firstIntegerStr = convertToString(firstInteger)
-	secondIntegerStr = convertToString(secondInteger)
-	thirdIntegerStr = convertToString(thirdInteger)
+		firstIntegerStr = convertToString(firstInteger)
+		secondIntegerStr = convertToString(secondInteger)
+		thirdIntegerStr = convertToString(thirdInteger)
 
-	equation = firstIntegerStr + operationSelected + secondIntegerStr + "=" + thirdIntegerStr
-	return equation
+		equation = firstIntegerStr + operationSelected + secondIntegerStr + "=" + thirdIntegerStr
+		return equation
+	else:
+		equation = ""
+		operations = ["+","*"]
 
+		firstInteger = 0
+		secondInteger = 0
+		thirdInteger = 0
+		firstIntegerStr = ""
+		secondIntegerStr = ""
+		thirdIntegerStr = ""
+
+		operationSelected = rnd.choice(operations)
+
+		if operationSelected == '+':
+			firstInteger = rnd.randrange(1, 10)
+			secondInteger = rnd.randrange(100 - firstInteger, 100)
+		elif operationSelected == '*':
+			firstInteger = rnd.randrange(2, 10)
+			secondInteger = rnd.randrange(math.ceil(100/firstInteger), 100)
+
+		if operationSelected == '+':
+			thirdInteger = firstInteger + secondInteger
+		elif operationSelected == '*':
+			thirdInteger = firstInteger * secondInteger
+
+		firstIntegerStr = str(firstInteger)
+		secondIntegerStr = str(secondInteger)
+		thirdIntegerStr = str(thirdInteger)
+
+		equation = firstIntegerStr + operationSelected + secondIntegerStr + "=" + thirdIntegerStr
+		return equation
 
 class ValidateStringView(APIView):
 	authentication_classes = [JWTAuthentication]
