@@ -102,23 +102,22 @@ def process_graph_data(data):
         source = int(link['source'])
         target = int(link['target'])
         adjacency_matrix[source - 1][target - 1] = 1  
-        adjacency_matrix[target - 1][source - 1] = 1
 
     return adjacency_matrix, node_values
 
 def validateTreeFunction(data):
     adjacency_matrix, node_values = process_graph_data(data)
-
+    validity = list("1111111")
     edgeDifferences = set()
     for i in range(0, 7):
         for j in range(0, 7):
             if(adjacency_matrix[i][j]):
+                if(abs(node_values[i + 1] - node_values[j + 1]) in edgeDifferences):
+                    validity[i] = '0'
+                    validity[j] = '0'
                 edgeDifferences.add(abs(node_values[i + 1] - node_values[j + 1]))
 
-    if(len(edgeDifferences) != 7):
-        return False
-    else:
-        return True
+    return validity
 
 class GraphGameView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -128,19 +127,20 @@ class GraphGameView(APIView):
             'Valid': validateTreeFunction(request.data)
         })
     
-    def get(self, request):
-        random_tree = self.formattedTree()
-
-        return JsonResponse(status=200, data={
-            "nodes" : """[{ "id": "1", "group": "team1", "value": "0"},
+class GraphGenerateView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self,request):
+        return JsonResponse(status=200,data={
+            "nodes" : [{ "id": "1", "group": "team1", "value": "0"},
                           { "id": "2", "group": "team2", "value": "0"},
                           { "id": "3", "group": "team3", "value": "0"},
                           { "id": "4", "group": "team4", "value": "0"},
                           { "id": "5", "group": "team4", "value": "0"},
                           { "id": "6", "group": "team4", "value": "0"},
                           { "id": "7", "group": "team4", "value": "0"}
-                          ]""",
-            "links" : random_tree
+                          ],
+            'links': formattedTree()
         })
 
 
