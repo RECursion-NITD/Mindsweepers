@@ -258,27 +258,25 @@ class ValidateStringView(APIView):
 			game_instance=Game.objects.get(game_user=profile)
 		except Game.DoesNotExist:
 			equ=equationGenerate()
-			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equ)
+			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equ)
 		if(game_instance.moves>=6):
 			return JsonResponse(status=200,data={
 				'validity':'00000000',
-				'verdict': 1
+				'verdict': 1,
+				'message': "moves exceeded"
 			})
 		
 		if(not(validateString(input_string))):
 			return JsonResponse(status = 200, data = {
-				'verdict' : 0,
-				'message' : 'Invalid String'
+				'verdict' : -1,
+				'message' : 'Invalid Input',
+				'validity' : '00000000'
 			})
-	
-		game_string_arr=game_instance.game_string_arr
-		game_string_arr = list(game_string_arr)
-		game_string_arr.append(input_string)
-		game_string_arr_json = json.dumps(game_string_arr)
-		game_instance.game_string_arr=game_string_arr_json
+		game_instance.game_string_arr.append(input_string)
 		game_instance.moves+=1
-		game_instance.save()
 		valid_string=validate(input_string,game_instance.ques_string)
+		game_instance.verdict.append(valid_string)
+		game_instance.save()
 		verdict=check_game_won(valid_string,game_instance)
 		if(verdict==2):
 			profile.points+=5
@@ -287,7 +285,8 @@ class ValidateStringView(APIView):
 			profile.save()
 		return JsonResponse(status=200,data={
 			'validity':valid_string,
-			'verdict': verdict
+			'verdict': verdict,
+			'message': 'ok'
         })
 			
 
@@ -343,13 +342,48 @@ class CreateMathsWordleView(APIView):
         try:
             game_instance=Game.objects.get(game_user=profile)
         except Game.DoesNotExist:
-            game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], ques_string=equationGenerate())
+            game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equationGenerate())
         game_instance.moves=0
         game_instance.game_string_arr=[]
         game_instance.ques_string=equationGenerate()
+        game_instance.verdict=[]
         game_instance.save() # reset game instance
         return JsonResponse(status=200,data={
             'message': 'done'
         })
+
+class CreateGameState(APIView):
+	authentication_classes = [JWTAuthentication]
+	permission_classes = [IsAuthenticated]
+	def post(self,request):
+		phone_number=request.data.get('phone')
+		try:
+			profile=Profile.objects.get(phone_number=phone_number)
+		except Profile.DoesNotExist:
+			return JsonResponse(status=404,data={
+				'message':'No user exists'
+			})
+		try:
+			game_instance=Game.objects.get(game_user=profile)
+		except Game.DoesNotExist:
+			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equationGenerate())
+		string_array = [] 
+		for i in game_instance.game_string_arr:
+			string_array.append(list(i))
+		if len(string_array) < 6:
+			for i in range(6 - len(string_array)):
+				string_array.append(['', '', '', '', '', '', '', ''])
+		verdict_array = []
+		for i in game_instance.verdict:
+			verdict_array.append(list(i))
+		if len(verdict_array) < 6:
+			verdict_array.append(['-1', '-1', '-1', '-1', '-1', '-1', '-1', '-1'])
+			for i in range(6 - len(verdict_array)):
+				verdict_array.append(['0', '0', '0', '0', '0', '0', '0', '0'])
+		return JsonResponse(status=200,data={
+			'stringArray': string_array,
+			'moves' : game_instance.moves,
+			'verdictArray': verdict_array,
+		})
 
 

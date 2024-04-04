@@ -7,6 +7,7 @@ class Game(models.Model):
     game_user = models.ForeignKey(Profile, on_delete=models.CASCADE)
     moves = models.IntegerField()
     game_string_arr = models.JSONField(default=list)
+    verdict = models.JSONField(default=list)
 
     def __str__(self):
         return self.game_user.user.username
