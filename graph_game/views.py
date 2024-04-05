@@ -57,7 +57,7 @@ def formattedTree():
     edgeContainer = generate_random_tree(7)
     listOfEdgesOfUI = []
     for tup in edgeContainer:
-        formatted_string = { "source": tup[0], "target": tup[1], "value": "1" }
+        formatted_string = { "source": str(tup[0]), "target": str(tup[1]), "value": "1" }
         listOfEdgesOfUI.append(formatted_string)
 
     #final_string = ",\n".join(listOfEdgesOfUI)
@@ -89,8 +89,9 @@ json_string = """
 
 def process_graph_data(data):
     #data = json.loads(json_string)
-    nodes = data.get('nodes', [])
-    links = data.get('links', [])
+    input = data.get('input')
+    nodes = input.get('nodes', [])
+    links = input.get('links', [])
 
     adjacency_matrix = [[0] * len(nodes) for _ in range(len(nodes))]
     node_values = {}
@@ -109,17 +110,21 @@ def process_graph_data(data):
 
 def validateTreeFunction(data):
     adjacency_matrix, node_values = process_graph_data(data)
-    validity = list("1111111")
+    validity = list("1" * len(adjacency_matrix))
     edgeDifferences = set()
-    for i in range(0, 7):
-        for j in range(0, 7):
-            if(adjacency_matrix[i][j]):
-                if(abs(node_values[i + 1] - node_values[j + 1]) in edgeDifferences):
+    for i in range(len(adjacency_matrix)):
+        for j in range(len(adjacency_matrix[i])):
+            if adjacency_matrix[i][j]:
+                if abs(node_values[i + 1] - node_values[j + 1]) in edgeDifferences:
                     validity[i] = '0'
                     validity[j] = '0'
+                else:
+                    validity[i] = '1'
+                    validity[j] = '1'
                 edgeDifferences.add(abs(node_values[i + 1] - node_values[j + 1]))
 
     return validity
+
 
 class GraphGameView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -150,7 +155,7 @@ class CreateGraphGameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        phone_number = request.data('phone')
+        phone_number = request.data.get('phone')
         
         try:
             profile = Profile.objects.get(phone_number=phone_number)
@@ -192,7 +197,7 @@ class CreateGraphGameView(APIView):
         game_instance.moves = 0  
         game_instance.save()  
 
-        return JsonResponse(status=200, data={'message': 'Done'})
+        return JsonResponse(status=200, data=game_instance.tree_structure)
     
 
 class GetGraphView(APIView):
