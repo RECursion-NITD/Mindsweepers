@@ -40,8 +40,26 @@ class RegisterView(APIView):
         user = User.objects.create_user(username=username, password=password)
         profile = Profile.objects.create(user=user, phone_number=phone_number)
         refresh = RefreshToken.for_user(user)
+        refresh['username'] = user.username
+        refresh['phone_number'] = user.profile.phone_number
         return JsonResponse(data={
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         },status=201)
+    
+class FetchRankings(APIView):
+    def post(self,request):
+        try:
+            profiles = Profile.objects.all().order_by('-points')[:10]
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404,data={'message':'No user exists'})
         
+        return JsonResponse(status=200,data={
+            'rankings': [
+                {
+                    'username': profile.user.username,
+                    'phone_number': profile.phone_number,
+                    'points': profile.points
+                } for profile in profiles
+            ]
+        })
