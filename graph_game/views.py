@@ -57,7 +57,7 @@ def formattedTree():
     edgeContainer = generate_random_tree(7)
     listOfEdgesOfUI = []
     for tup in edgeContainer:
-        formatted_string = { "source": tup[0], "target": tup[1], "value": "1" }
+        formatted_string = { "source": str(tup[0]), "target": str(tup[1]), "value": "1" }
         listOfEdgesOfUI.append(formatted_string)
 
     #final_string = ",\n".join(listOfEdgesOfUI)
