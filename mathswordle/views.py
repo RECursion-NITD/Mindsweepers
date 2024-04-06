@@ -11,6 +11,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 
 def validateString(inputString):
+	operations = ['+', '*', '/', '-']
 	if(len(inputString) != 8):
 		return False
 	input = inputString.split('=')

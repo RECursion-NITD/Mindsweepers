@@ -50,7 +50,7 @@ class RegisterView(APIView):
 class FetchRankings(APIView):
     def post(self,request):
         try:
-            profiles = Profile.objects.all().order_by('-points')[:10]
+            profiles = Profile.objects.all().order_by('-points')
         except Profile.DoesNotExist:
             return JsonResponse(status=404,data={'message':'No user exists'})
         
