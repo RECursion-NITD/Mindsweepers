@@ -6,60 +6,45 @@ from website.models import Profile
 from .models import GraphGame
 import json
 import random
+from django.utils import timezone
+from datetime import datetime, timedelta
  
-def print_tree_edges(prufer, m):
-    edgeContainer = []
-    vertices = m + 2
-    vertex_set = [0] * vertices
- 
-    for i in range(vertices):
-        vertex_set[i] = 0
- 
-    for i in range(vertices - 2):
-        vertex_set[prufer[i] - 1] += 1
-
-    j = 0
- 
-    for i in range(vertices - 2):
-        for j in range(vertices):
-            if vertex_set[j] == 0:
-                vertex_set[j] = -1
-
-                edgeContainer.append((j + 1, prufer[i]))
-                vertex_set[prufer[i] - 1] -= 1
- 
-                break
- 
-    j = 0
-
-    edgeTuple = []
-    for i in range(vertices):
-        if vertex_set[i] == 0 and j == 0:
-            edgeTuple.append(i + 1)
-            j += 1
-        elif vertex_set[i] == 0 and j == 1:
-            edgeTuple.append(i + 1)
-
-    edgeContainer.append(tuple(edgeTuple))
-    return edgeContainer
-
 def generate_random_tree(n):
-    length = n - 2
-    arr = [0] * length
- 
-    for i in range(length):
-        arr[i] = random.randint(1, length + 1)
- 
-    setOfEdges = print_tree_edges(arr, length)
-    return setOfEdges
+    length = n
+    nodeContainer = []
+    treeContainer = [1]
+    edgeContainer = []
+    for i in range(2, length+1):
+        nodeContainer.append(i)
+    for i in range(2, length+1):
+        sel_node = random.choice(treeContainer)
+        get_node = random.choice(nodeContainer)
+        nodeContainer.remove(get_node)
+        treeContainer.append(get_node)
+        edgeContainer.append([sel_node, get_node])
+        treeContainer.append(sel_node)
+
+    # add more edges
+    edge_number = random.randint(0, 7)
+    for i in range(0, edge_number):
+        sel_node = random.choice(treeContainer)
+        get_node = random.choice(treeContainer)
+        if [sel_node, get_node] in edgeContainer or [get_node, sel_node] in edgeContainer or sel_node == get_node:
+            i -= 1
+            continue
+        edgeContainer.append([sel_node, get_node])
+
+    return edgeContainer
+        
 
 def formattedTree():
     edgeContainer = generate_random_tree(7)
     listOfEdgesOfUI = []
+    idx = 1
     for tup in edgeContainer:
-        formatted_string = { "source": str(tup[0]), "target": str(tup[1]), "value": "1" }
+        formatted_string = { "source": str(tup[0]), "target": str(tup[1]), "value": str(idx) }
         listOfEdgesOfUI.append(formatted_string)
-
+        idx += 1
     #final_string = ",\n".join(listOfEdgesOfUI)
     return listOfEdgesOfUI
 
@@ -109,24 +94,55 @@ def process_graph_data(data):
 
 def validateTreeFunction(data):
     adjacency_matrix, node_values = process_graph_data(data)
-    validity = list("1111111")
-    edgeDifferences = set()
+    validity = list("0000000")
+    edge_validity = list("0"*len(data.get('links',[])))
+    edgeDifferences = [-1]*15
+    node_set = [-1]*15
     for i in range(0, 7):
-        for j in range(0, 7):
-            if(adjacency_matrix[i][j]):
-                if(abs(node_values[i + 1] - node_values[j + 1]) in edgeDifferences):
-                    validity[i] = '0'
-                    validity[j] = '0'
-                edgeDifferences.add(abs(node_values[i + 1] - node_values[j + 1]))
+        if node_values[i + 1] > 13 or node_values[i + 1] <= 0 or node_values[i + 1] % 2 == 0:
+            validity[i] = '1'
+        if node_set[node_values[i + 1]] == -1:
+            node_set[node_values[i + 1]] = i
+        else:
+            validity[i] = '1'
+            validity[node_set[node_values[i + 1]]] = '1'
+    links = data.get('links', [])
+    for i in range(0, len(links)):
+        source = int(links[i]['source'])
+        target = int(links[i]['target'])
+        if edgeDifferences[abs(node_values[source] - node_values[target])] == -1:
+            edgeDifferences[abs(node_values[source] - node_values[target])] = i
+        else:
+            edge_validity[edgeDifferences[abs(node_values[source] - node_values[target])]] = '1'
+            edge_validity[i] = '1'
 
-    return validity
+    return validity, edge_validity
 
 class GraphGameView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     def post(self,request):
+        user = request.user
+        try:
+            profile = Profile.objects.get(user=user)
+        except Profile.DoesNotExist:
+            return JsonResponse(status=404, data={'message': 'No user exists'})
+        try:
+            game_instance = GraphGame.objects.get(game_user=profile)
+        except GraphGame.DoesNotExist:
+            return JsonResponse(status=404, data={'message': 'No game exists'})
+        game_instance.tree_structure = request.data
+        game_instance.save()
+        verdict = 0
+        validate, edge_validate = validateTreeFunction(request.data)
+        if validate == list("0000000") and edge_validate == list("0"*len(request.data.get('links',[]))):
+            verdict = 1
+            profile.points += 5
+            profile.save()
         return JsonResponse(status=200,data={
-            'Valid': validateTreeFunction(request.data)
+            'validate': validate,
+            'edgeValidate': edge_validate,
+            'verdict': verdict
         })
     
 class GraphGenerateView(APIView):
@@ -150,7 +166,7 @@ class CreateGraphGameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        phone_number = request.data('phone')
+        phone_number = request.data.get('phone')
         
         try:
             profile = Profile.objects.get(phone_number=phone_number)
@@ -172,11 +188,15 @@ class CreateGraphGameView(APIView):
                         { "id": "7", "group": "team4", "value": "0"}
                     ],
                     'links': formattedTree()
-                }
+                },
+                last_reset_time = timezone.now()
             )
-
-        
-        
+        time_left = timedelta(seconds=60) - (timezone.now() - game_instance.last_reset_time)
+        time_left = max(time_left, timedelta(0))
+        if(time_left > timedelta(0) and game_instance.moves < 6):
+            return JsonResponse(status=200,data={
+				'message': 'wait for '+ str(time_left.seconds) + ' seconds',
+			})
         game_instance.tree_structure = {
             "nodes" : [
                 { "id": "1", "group": "team1", "value": "0"},
@@ -189,7 +209,8 @@ class CreateGraphGameView(APIView):
             ],
             'links': formattedTree()
         }
-        game_instance.moves = 0  
+        game_instance.moves = 0 
+        game_instance.last_reset_time = timezone.now() 
         game_instance.save()  
 
         return JsonResponse(status=200, data={'message': 'Done'})

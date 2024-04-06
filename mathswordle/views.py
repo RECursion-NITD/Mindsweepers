@@ -7,60 +7,36 @@ from .models import Game
 import random as rnd
 import math
 import json
+from django.utils import timezone
+from datetime import datetime, timedelta
 
-def operateOnNumbers(firstNumber, secondNumber, operationStr):
-	if(operationStr == '+'):
-		return firstNumber + secondNumber
-	elif(operationStr == '-'):
-		return firstNumber - secondNumber
-	elif(operationStr == '*'):
-		return firstNumber * secondNumber
-	elif(operationStr == '/'):
-		return firstNumber / secondNumber
-
-def validateString(equationstr):
-	operatorList = ['+', '*', '/', '-', '=']
-
-	operatorNum = 0
-	equalIndex = -1
-	operatorIndex = -1
-
-	firstNumber = 0
-	secondNumber = 0
-	operatedNumber = 0
-
-	if(len(equationstr) != 8):
-			return False
+def validateString(inputString):
+	if(len(inputString) != 8):
+		return False
+	input = inputString.split('=')
+	if(len(input) != 2):
+		return False
+	lhs = 0
+	rhs = 0
+	if(input[0].isdigit()):
+		lhs = int(input[0])
 	else:
-		for i in range(0, 8):
-			found = equationstr[i] in operatorList
-			if found:
-				operatorNum += 1
-
-			if found and equationstr[i] == '=':
-				equalIndex = i
-			elif found and equationstr[i] != '=':
-				operatorIndex = i
-
-		if(operatorNum != 2):
-			return False
-		
 		try:
-			if(operatorIndex < equalIndex):
-				firstNumber = int(equationstr[0:operatorIndex])
-				secondNumber = int(equationstr[operatorIndex + 1: equalIndex])
-				operatedNumber = int(equationstr[equalIndex + 1: 8])
-			elif(operatorIndex > equalIndex):
-				firstNumber = int(equationstr[operatorIndex + 1 : 8])
-				secondNumber = int(equationstr[equalIndex + 1: operatorIndex])
-				operatedNumber = int(equationstr[0: equalIndex])
-
-			if(operateOnNumbers(firstNumber, secondNumber, equationstr[operatorIndex]) == operatedNumber):
-				return True
-			else:
-				return False
+			lhs = eval(input[0])
 		except:
 			return False
+	if(input[1].isdigit()):
+		rhs = int(input[1])
+	else:
+		try:
+			rhs = eval(input[1])
+		except:
+			return False
+	if(lhs == rhs):
+		return True
+	else:
+		return False
+
 
 def convertToString(a):
 	if(a < 10):
@@ -68,91 +44,81 @@ def convertToString(a):
 	else:
 		return str(a)
 
-def equationGenerate():
-	equationType = rnd.randrange(0, 2)
-	if equationType:
-		equation = ""
-		operations = ["+", "-", "/", "*"]
-
-		firstInteger = 0
-		secondInteger = 0
-		thirdInteger = 0
-		firstIntegerStr = ""
-		secondIntegerStr = ""
-		thirdIntegerStr = ""
-
-		operationSelected = rnd.choice(operations)
-		if operationSelected == '+':
-			firstInteger = rnd.randrange(1, 100)
-			if firstInteger == 99:
-				secondInteger = 0
-			else:
-				secondInteger = rnd.randrange(1, 100 - firstInteger)
-		elif operationSelected == '-':
-			firstInteger = rnd.randrange(1, 100)
-			secondInteger = rnd.randrange(1, firstInteger + 1)
-		elif operationSelected == '*':
-			firstInteger = rnd.randrange(1, 50)
-
-			if int(100/firstInteger) == 1:
-				secondInteger = 1
-			else:
-				secondInteger = rnd.randrange(1, int(100/firstInteger))
-		elif operationSelected == '/':
-			secondInteger = rnd.randrange(1, 25)
-			if int(100/secondInteger) == 1:
-				thirdInteger = 1
-			else:
-				thirdInteger = rnd.randrange(1, int(100/secondInteger))
-
-			firstInteger = thirdInteger * secondInteger
-
-		if operationSelected == '+':
-			thirdInteger = firstInteger + secondInteger
-		elif operationSelected == '-':
-			thirdInteger = firstInteger - secondInteger
-		elif operationSelected == '*':
-			thirdInteger = firstInteger * secondInteger
-
-		#third integer is already calculated for division
-
-		firstIntegerStr = convertToString(firstInteger)
-		secondIntegerStr = convertToString(secondInteger)
-		thirdIntegerStr = convertToString(thirdInteger)
-
-		equation = firstIntegerStr + operationSelected + secondIntegerStr + "=" + thirdIntegerStr
-		return equation
+def get_upper(num, op):
+	if(op == '+'):
+		return 99 - num
+	elif(op == '-'):
+		return num
+	elif(op == '*'):
+		return 999//num
 	else:
-		equation = ""
-		operations = ["+","*"]
+		return num
 
-		firstInteger = 0
-		secondInteger = 0
-		thirdInteger = 0
-		firstIntegerStr = ""
-		secondIntegerStr = ""
-		thirdIntegerStr = ""
+def factors(num):
+	fact = []
+	for i in range(1, int(math.sqrt(num))+1):
+		if(num % i == 0):
+			fact.append(i)
+			if(num//i != i):
+				fact.append(num//i)
+	return fact
 
-		operationSelected = rnd.choice(operations)
+def generation():
+	operations = ['+', '*', '/', '-']
+	length = 7
+	equation = ""
+	op = operations[rnd.randint(0, 3)]
+	if(op == '/'):
+		num = rnd.randint(100, 1000)
+		fact = factors(num)
+		while len(fact) == 2:
+			num = rnd.randint(1, 1000)
+			fact = factors(num)
+		num2 = fact[rnd.randint(0, len(fact)-1)]
+		equation = str(num) + op + str(int(num2))
+	elif(op == '*'):
+		num = rnd.randint(1, 100)
+		num_length = rnd.randint(1, 2)
+		upper = 9
+		if(num_length == 2):
+			upper = 99//num
+		num2 = rnd.randint(1, upper)
+		equation = str(num) + op + str(num2)
+	elif(op == '+'):
+		num = rnd.randint(1, 89)
+		lower = 10
+		upper = 100-num
+		if(num < 10):
+			lower = 100-num
+			upper = 100
+		num2 = rnd.randint(lower, upper)
+		equation = str(num) + op + str(num2)
+	else:
+		upper = rnd.choice([100, 108])
+		lower = 20
+		if upper == 108:
+			lower = 101
+		num = rnd.randint(lower, upper)
+		num2 = 0
+		if(num < 100):
+			num2 = rnd.randint(10, num-10)
+		else:
+			num_length = rnd.randint(1, 2)
+			if(num_length == 1):
+				num2 = rnd.randint(num-100,10)
+			else:
+				num2 = rnd.randint(num-10, num)
+		equation = str(num) + op + str(num2)
+	result = eval(equation)
+	equation += '=' + str(int(result))
+	return equation
 
-		if operationSelected == '+':
-			firstInteger = rnd.randrange(1, 10)
-			secondInteger = rnd.randrange(100 - firstInteger, 100)
-		elif operationSelected == '*':
-			firstInteger = rnd.randrange(2, 10)
-			secondInteger = rnd.randrange(math.ceil(100/firstInteger), 100)
-
-		if operationSelected == '+':
-			thirdInteger = firstInteger + secondInteger
-		elif operationSelected == '*':
-			thirdInteger = firstInteger * secondInteger
-
-		firstIntegerStr = str(firstInteger)
-		secondIntegerStr = str(secondInteger)
-		thirdIntegerStr = str(thirdInteger)
-
-		equation = firstIntegerStr + operationSelected + secondIntegerStr + "=" + thirdIntegerStr
-		return equation
+def equationGenerate():
+	equation = generation()
+	while len(equation) != 8:
+		equation = generation()	
+		print(equation)
+	return equation
 
 class ValidateStringView(APIView):
 	authentication_classes = [JWTAuthentication]
@@ -169,8 +135,8 @@ class ValidateStringView(APIView):
 		try:
 			game_instance=Game.objects.get(game_user=profile)
 		except Game.DoesNotExist:
-			equ=equationGenerate()
-			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equ)
+			equ = equationGenerate()
+			game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equ, last_reset_time = timezone.now())
 		if(game_instance.moves>=6):
 			return JsonResponse(status=200,data={
 				'validity':'00000000',
@@ -205,6 +171,7 @@ class ValidateStringView(APIView):
 def validate(input_string, correct_string):
     bool_string = "0" * len(input_string)  # Initialize bool_string with zeros
     correct_list = list(correct_string)   # Convert correct_string to a list for modification
+    print(correct_list)
     for i in range(len(input_string)):
         if input_string[i] == correct_list[i]:
             bool_string = bool_string[:i] + '2' + bool_string[i+1:]  # Update bool_string at position i
@@ -254,11 +221,22 @@ class CreateMathsWordleView(APIView):
         try:
             game_instance=Game.objects.get(game_user=profile)
         except Game.DoesNotExist:
-            game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equationGenerate())
+            game_instance = Game.objects.create(game_user=profile, moves=0, game_string_arr=[], verdict=[], ques_string=equationGenerate(), last_reset_time = timezone.now())
+            return JsonResponse(status=200,data={
+            	'message': 'done'
+        	}) 
+        time_left = timedelta(seconds=60) - (timezone.now() - game_instance.last_reset_time)
+        time_left = max(time_left, timedelta(0))
+        if(time_left > timedelta(0) and game_instance.moves < 6):
+            return JsonResponse(status=200,data={
+				'message': 'wait for '+ str(time_left.seconds) + ' seconds',
+			})
+
         game_instance.moves=0
         game_instance.game_string_arr=[]
         game_instance.ques_string=equationGenerate()
         game_instance.verdict=[]
+        game_instance.last_reset_time = timezone.now()
         game_instance.save() # reset game instance
         return JsonResponse(status=200,data={
             'message': 'done'

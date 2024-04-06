@@ -8,6 +8,7 @@ class Game(models.Model):
     moves = models.IntegerField()
     game_string_arr = models.JSONField(default=list)
     verdict = models.JSONField(default=list)
+    last_reset_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.game_user.user.username
