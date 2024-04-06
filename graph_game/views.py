@@ -25,14 +25,14 @@ def generate_random_tree(n):
         treeContainer.append(sel_node)
 
     # add more edges
-    edge_number = random.randint(0, 7)
-    for i in range(0, edge_number):
-        sel_node = random.choice(treeContainer)
-        get_node = random.choice(treeContainer)
-        if [sel_node, get_node] in edgeContainer or [get_node, sel_node] in edgeContainer or sel_node == get_node:
-            i -= 1
-            continue
-        edgeContainer.append([sel_node, get_node])
+    # edge_number = random.randint(0, 7)
+    # for i in range(0, edge_number):
+    #     sel_node = random.choice(treeContainer)
+    #     get_node = random.choice(treeContainer)
+    #     if [sel_node, get_node] in edgeContainer or [get_node, sel_node] in edgeContainer or sel_node == get_node:
+    #         i -= 1
+    #         continue
+    #     edgeContainer.append([sel_node, get_node])
 
     return edgeContainer
         
