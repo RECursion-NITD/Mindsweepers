@@ -213,7 +213,7 @@ class CreateGraphGameView(APIView):
         time_left = max(time_left, timedelta(0))
         if(time_left > timedelta(0) and game_instance.moves < 6):
             return JsonResponse(status=200,data={
-				'message': 'wait for '+ str(time_left.seconds) + ' seconds',
+				'message': 'You have reached max reset limit. Wait for '+ str(time_left.seconds) + ' seconds',
 			})
         
         game_instance.tree_structure = {
