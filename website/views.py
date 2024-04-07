@@ -17,6 +17,7 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
         refresh['username'] = user.username
         refresh['phone_number'] = user.profile.phone_number
+        refresh['points'] = user.profile.points 
         return JsonResponse(status=200,data={
             'refresh': str(refresh),
             'access': str(refresh.access_token),
@@ -42,6 +43,7 @@ class RegisterView(APIView):
         refresh = RefreshToken.for_user(user)
         refresh['username'] = user.username
         refresh['phone_number'] = user.profile.phone_number
+        refresh['points'] = user.profile.points
         return JsonResponse(data={
             'refresh': str(refresh),
             'access': str(refresh.access_token),

@@ -148,7 +148,7 @@ class ValidateStringView(APIView):
 		if(not(validateString(input_string))):
 			return JsonResponse(status = 200, data = {
 				'verdict' : -1,
-				'message' : 'Invalid Input',
+				'message' : 'Invalid Input. Please enter a valid equation.',
 				'validity' : '00000000'
 			})
 		game_instance.game_string_arr.append(input_string)
