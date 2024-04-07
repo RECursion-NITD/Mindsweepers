@@ -137,10 +137,12 @@ class GraphGameView(APIView):
         if(verdict == 1):
             game_instance.moves = 6
         game_instance.save()
-        if validate == list("0000000") and edge_validate == list("0"*len(request.data.get('links',[]))):
+        if validate == list("0000000") and edge_validate == list("0"*len(request.data.get('links',[]))) and game_instance.moves < 6:
             verdict = 1
             profile.points += 10
             profile.save()
+        if(game_instance.moves < 6):
+            verdict = 0
         return JsonResponse(status=200,data={
             'validate': validate,
             'edgeValidate': edge_validate,
@@ -189,16 +191,19 @@ class CreateGraphGameView(APIView):
                         { "id": "6", "group": "team4", "value": "0"},
                         { "id": "7", "group": "team4", "value": "0"}
                     ],
-                    'links': formattedTree()
+                    'links': formattedTree(),
+                    "last_reset_time" : timezone.now()
                 },
                 last_reset_time = timezone.now()
             )
+        
         time_left = timedelta(seconds=60) - (timezone.now() - game_instance.last_reset_time)
         time_left = max(time_left, timedelta(0))
         if(time_left > timedelta(0) and game_instance.moves < 6):
             return JsonResponse(status=200,data={
 				'message': 'wait for '+ str(time_left.seconds) + ' seconds',
 			})
+        
         game_instance.tree_structure = {
             "nodes" : [
                 { "id": "1", "group": "team1", "value": "0"},
