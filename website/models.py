@@ -14,4 +14,10 @@ class Profile(models.Model):
     
     def __str__(self):
         return self.user.username
+    
+class StartEvent(models.Model):
+    start_time = models.DateTimeField()
+    
+    def __str__(self):
+        return str(self.start_time)
 
