@@ -209,7 +209,7 @@ class CreateGraphGameView(APIView):
                 last_reset_time = timezone.now()
             )
         
-        time_left = timedelta(seconds=0) - (timezone.now() - game_instance.last_reset_time)
+        time_left = timedelta(seconds=60) - (timezone.now() - game_instance.last_reset_time)
         time_left = max(time_left, timedelta(0))
         if(time_left > timedelta(0) and game_instance.moves < 6):
             return JsonResponse(status=200,data={
