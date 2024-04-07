@@ -132,12 +132,14 @@ class GraphGameView(APIView):
         except GraphGame.DoesNotExist:
             return JsonResponse(status=404, data={'message': 'No game exists'})
         game_instance.tree_structure = request.data
-        game_instance.save()
         verdict = 0
         validate, edge_validate = validateTreeFunction(request.data)
+        if(verdict == 1):
+            game_instance.moves = 6
+        game_instance.save()
         if validate == list("0000000") and edge_validate == list("0"*len(request.data.get('links',[]))):
             verdict = 1
-            profile.points += 5
+            profile.points += 10
             profile.save()
         return JsonResponse(status=200,data={
             'validate': validate,

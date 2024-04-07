@@ -11,7 +11,6 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 
 def validateString(inputString):
-	operations = ['+', '*', '/', '-']
 	if(len(inputString) != 8):
 		return False
 	input = inputString.split('=')
@@ -26,6 +25,7 @@ def validateString(inputString):
 			lhs = eval(input[0])
 		except:
 			return False
+		print(rhs)
 	if(input[1].isdigit()):
 		rhs = int(input[1])
 	else:
@@ -148,7 +148,7 @@ class ValidateStringView(APIView):
 		if(not(validateString(input_string))):
 			return JsonResponse(status = 200, data = {
 				'verdict' : -1,
-				'message' : 'Invalid Input. Please enter a valid equation.',
+				'message' : 'Invalid Input. Please enter a valid equation (Leading zeros not allowed).',
 				'validity' : '00000000'
 			})
 		game_instance.game_string_arr.append(input_string)

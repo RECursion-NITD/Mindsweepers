@@ -13,7 +13,7 @@ class LoginView(APIView):
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
         start = StartEvent.objects.all()[0]
-        time_left = timedelta(seconds=10800) - (timezone.now() - start.start_time)
+        time_left = timedelta(seconds=1) - (timezone.now() - start.start_time)
         time_left = max(time_left, timedelta(0))
         if(time_left > timedelta(0)):
             return JsonResponse(status=400,data={
@@ -68,7 +68,7 @@ class RegisterView(APIView):
 class FetchRankings(APIView):
     def post(self,request):
         try:
-            profiles = Profile.objects.all().order_by('-points')
+            profiles = Profile.objects.all().order_by('-points').filter(role='3')
         except Profile.DoesNotExist:
             return JsonResponse(status=404,data={'message':'No user exists'})
         
